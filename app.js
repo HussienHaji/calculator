@@ -2,18 +2,20 @@ const historyEl = document.querySelector(".history");
 const inputEl = document.querySelector(".input");
 const numbersEl = document.querySelectorAll(".key-num");
 const signsEl = document.querySelectorAll(".key-sign");
-const deleteEl = document.querySelector(".delete");
-const deleteAll = document.querySelector(".delete-all");
+const deleteOneEl = document.querySelector(".delete");
+const deleteAllEl = document.querySelector(".delete-all");
 
-let result = 0;
 let currentNumber = "";
 let previousNumber = "";
-let currentOperation = null;
-let previousOperation = "";
+let currentOpretion = null;
+let previousOpretion = null;
+let result = 0;
 
-function getNumber(e) {
+function getNumbers(e) {
   const inputNumber = e.target.textContent;
-  if (currentNumber === "" && inputNumber === "0") return;
+  if (currentNumber.length > 16) return;
+  if (currentNumber.startsWith("0")) currentNumber = "";
+  if (inputNumber === "0" && currentNumber.startsWith("0")) return;
   if (inputNumber === "." && currentNumber.includes(".")) return;
 
   currentNumber += inputNumber;
@@ -24,39 +26,38 @@ function getSign(e) {
   const inputSign = e.target.textContent;
 
   if (currentNumber === "") return;
-
-  if (inputSign === "AC") return;
-
   if (inputSign === "=") {
+    setResult(previousNumber, currentOpretion, currentNumber);
     showResult();
     return;
   }
 
-  if (currentOperation === null) {
-    currentOperation = inputSign;
-    setHistory(currentNumber, currentOperation);
+  if (!previousNumber) {
     previousNumber = currentNumber;
     currentNumber = "";
-    inputEl.textContent = "";
-  } else if (currentOperation) {
-    setResult(previousNumber, currentNumber, currentOperation);
-    currentOperation = inputSign;
-    setHistory(result, currentOperation);
+    inputEl.textContent = currentNumber;
+    currentOpretion = inputSign;
+    setResult(previousNumber, currentOpretion, 0);
+    setHistory(previousNumber, currentOpretion);
+  } else {
+    setResult(previousNumber, currentOpretion, currentNumber);
     previousNumber = result;
     currentNumber = "";
     inputEl.textContent = currentNumber;
+    currentOpretion = inputSign;
+    setHistory(previousNumber, currentOpretion);
   }
 }
 
-function setResult(preNumber, currNumber, oparetor) {
+function setResult(prevNumber, oparetor, currNumber) {
   const currNum = parseFloat(currNumber);
-  const preNum = parseFloat(preNumber);
+  const preNum = parseFloat(prevNumber);
   switch (oparetor) {
     case "+":
       result = preNum + currNum;
       break;
     case "−":
-      result = preNum - currNum;
+      result = preNum - Math.abs(currNum);
       break;
     case "×":
       result = preNum * currNum;
@@ -70,27 +71,16 @@ function setResult(preNumber, currNumber, oparetor) {
   }
 }
 
-function setHistory(number, operation) {
-  historyEl.textContent = "";
-  const numberSapn = document.createElement("span");
-  numberSapn.className = "history-number";
-  numberSapn.textContent = number;
-  const operationSapn = document.createElement("span");
-  operationSapn.className = "history-sign";
-  operationSapn.textContent = operation;
-  historyEl.append(numberSapn, " ", operationSapn, " ");
-}
-
-function clearInput() {
-  inputEl.textContent = "";
-  currentNumber = "";
-  currentOperation = null;
-  previousNumber = "";
-  historyEl.textContent = "";
+function setHistory(number, operator) {
+  historyEl.innerHTML = "";
+  historyEl.innerHTML = `
+  <span class="history-number">${number}</span>
+  <span class="history-sign">${operator}</span>
+  `;
 }
 
 function showResult() {
-  setResult(previousNumber, currentNumber, currentOperation);
+  setResult(previousNumber, currentOpretion, currentNumber);
   historyEl.textContent = "";
   previousNumber = "0";
   currentNumber = result;
@@ -104,15 +94,20 @@ function deleteOneInput() {
 }
 
 numbersEl.forEach((number) => {
-  number.addEventListener("click", getNumber);
+  number.addEventListener("click", getNumbers);
 });
 
 signsEl.forEach((sign) => {
-  if (sign.classList.contains("delete")) {
-    sign.addEventListener("click", deleteOneInput);
-  } else {
-    sign.addEventListener("click", getSign);
-  }
+  sign.addEventListener("click", getSign);
 });
 
-deleteAll.addEventListener("click", clearInput);
+deleteAllEl.addEventListener("click", () => {
+  currentNumber = "";
+  previousNumber = "";
+  currentOpretion = null;
+  result = 0;
+  inputEl.textContent = "";
+  historyEl.textContent = "";
+});
+
+deleteOneEl.addEventListener("click", deleteOneInput);
